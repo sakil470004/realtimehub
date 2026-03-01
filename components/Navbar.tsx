@@ -186,9 +186,9 @@ export default function Navbar() {
                         No notifications yet
                       </p>
                     ) : (
-                      notifications.map((notification) => (
+                      notifications.map((notification,index) => (
                         <div
-                          key={notification._id}
+                          key={index}
                           className={`p-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition ${
                             !notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                           }`}
