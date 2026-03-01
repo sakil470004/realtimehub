@@ -1,0 +1,108 @@
+/**
+ * Global Styles
+ * =============
+ * 
+ * This file contains global CSS styles applied to the entire app.
+ * Uses Tailwind CSS for utility classes.
+ */
+
+/* Import Tailwind */
+@import "tailwindcss";
+
+/* Custom global styles */
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Default body styles */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Loading spinner animation */
+.spinner {
+  animation: spin 1s linear infinite;
+  border-radius: 9999px;
+  border-width: 2px;
+  border-color: #d1d5db;
+  border-top-color: #2563eb;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Input base styles */
+.input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.input:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+  border-color: transparent;
+}
+
+/* Dark mode input */
+@media (prefers-color-scheme: dark) {
+  .input {
+    border-color: #4b5563;
+    background-color: #374151;
+    color: white;
+  }
+}
+
+/* Form label styles */
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .label {
+    color: #d1d5db;
+  }
+}
+
+/* Button styles */
+.btn-primary {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  background-color: #2563eb;
+  color: white;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6, 0 0 0 4px white;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error text styles */
+.error-text {
+  font-size: 0.875rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+}
