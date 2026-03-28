@@ -25,6 +25,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { socketManager } from '@/lib/socket';
 import CommentSection from './CommentSection';
+import Link from 'next/link';
 
 // Post data type
 export interface Post {
@@ -314,7 +315,11 @@ export default function PostCard({ post, onPostUpdated, onPostDeleted }: PostCar
       {/* Post Header */}
       <div className="p-4 pb-0">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          {/* ========== AUTHOR INFO - CLICKABLE ========== */}
+          <Link
+            href={`/profile/${post.author._id}`}
+            className="flex items-center gap-3 hover:opacity-80 transition"
+          >
             {/* Author Avatar */}
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
               {post.author.username.charAt(0).toUpperCase()}
@@ -322,14 +327,14 @@ export default function PostCard({ post, onPostUpdated, onPostDeleted }: PostCar
             
             {/* Author Info */}
             <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">
+              <h3 className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition">
                 {post.author.username}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {formatTime(post.createdAt)}
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Menu Button (Edit/Delete) - Only for post author */}
           {isPostAuthor && (

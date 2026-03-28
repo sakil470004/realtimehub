@@ -70,11 +70,11 @@ export async function GET(request: NextRequest) {
       // Get friend info with only necessary fields
       .populate({
         path: 'requester',
-        select: 'username email',
+        select: '_id username email', // Explicitly include _id
       })
       .populate({
         path: 'recipient',
-        select: 'username email',
+        select: '_id username email', // Explicitly include _id
       });
 
     // Step 4: Extract friend objects from friendships
@@ -88,10 +88,14 @@ export async function GET(request: NextRequest) {
           ? friendship.recipient
           : friendship.requester;
 
+      // Explicitly construct the friend object to ensure all fields are included
+      // This fixes search by username issue (username field must be present)
       return {
-        ...friendUser.toObject(), // Convert MongoDB doc to plain object
+        _id: friendUser._id.toString(), // Convert ObjectId to string
+        username: friendUser.username, // Username for search/display
+        email: friendUser.email, // Email for display
         friendship: {
-          _id: friendship._id,
+          _id: friendship._id.toString(), // Friendship ID for unfriend action
           acceptedAt: friendship.updatedAt, // When the friendship was accepted
         },
       };

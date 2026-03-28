@@ -207,9 +207,11 @@ export default function FriendsPage() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Friends loaded:', data.friends); // Debug: Log loaded friends
         setFriends(data.friends);
       } else {
         setFriendError('Failed to load friends');
+        console.error('Failed to load friends - Status:', response.status); // Debug: Log error
       }
     } catch (error) {
       console.error('Load friends error:', error);
@@ -390,9 +392,13 @@ export default function FriendsPage() {
    * Filter friends list based on search query
    * Case-insensitive username search
    */
-  const filteredFriends = friends.filter((friend) =>
-    friend.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFriends = friends.filter((friend) => {
+    const match = friend.username.toLowerCase().includes(searchQuery.toLowerCase());
+    if (searchQuery) {
+      console.log(`Checking "${friend.username}" against "${searchQuery}": ${match}`); // Debug: Log each search check
+    }
+    return match;
+  });
 
   // ========== RENDER: LOADING STATE ==========
   if (authLoading) {
