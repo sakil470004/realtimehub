@@ -82,6 +82,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Connect to Socket.io when user is authenticated
         socketManager.connect(data.user.id);
+        
+        // Broadcast that user came online
+        const socket = socketManager.getSocket();
+        socket?.emit('user_online', {
+          userId: data.user.id,
+          username: data.user.username,
+        });
       } else {
         setUser(null);
         socketManager.disconnect();
@@ -123,6 +130,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         // Connect to socket after login
         socketManager.connect(data.user.id);
+        
+        // Broadcast that user came online
+        const socket = socketManager.getSocket();
+        socket?.emit('user_online', {
+          userId: data.user.id,
+          username: data.user.username,
+        });
+        
         return { success: true };
       } else {
         return { success: false, error: data.error || 'Login failed' };
@@ -152,6 +167,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         // Connect to socket after signup
         socketManager.connect(data.user.id);
+        
+        // Broadcast that user came online
+        const socket = socketManager.getSocket();
+        socket?.emit('user_online', {
+          userId: data.user.id,
+          username: data.user.username,
+        });
+        
         return { success: true };
       } else {
         return { 
@@ -174,6 +197,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const logout = async () => {
     try {
+      // Broadcast that user went offline (before disconnecting)
+      if (user) {
+        const socket = socketManager.getSocket();
+        socket?.emit('user_offline', {
+          userId: user.id,
+          username: user.username,
+        });
+      }
+      
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch (error) {
       console.error('Logout error:', error);

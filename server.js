@@ -157,6 +157,334 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ========== CHAT SYSTEM EVENTS ==========
+
+  /**
+   * Join Chat Room Event
+   * --------------------
+   * When user opens a chat, they join a room specific to that chat.
+   * This allows us to broadcast messages to only users in that chat.
+   * 
+   * Room Structure:
+   * - chat_<chatId>: All users in this chat
+   * - user_<userId>: All connections of this user (multi-tab support)
+   * 
+   * Example:
+   * socket.on('join_chat', { chatId: 'chat_123' })
+   * -> socket joins room 'chat_123'
+   * -> All messages in chat_123 go to this room
+   */
+  socket.on('join_chat', ({ chatId, userId }) => {
+    if (chatId && userId) {
+      // Step 1: User joins the chat room
+      socket.join(`chat_${chatId}`);
+      console.log(`👁️ User ${userId} joined chat ${chatId}`);
+
+      // Step 2: Notify others in chat that user came online
+      socket.broadcast.to(`chat_${chatId}`).emit('user_joined_chat', {
+        userId,
+        chatId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Leave Chat Room Event
+   * --------------------
+   * When user closes the chat modal, they leave the room.
+   * Notifies others that they left.
+   */
+  socket.on('leave_chat', ({ chatId, userId }) => {
+    if (chatId && userId) {
+      // Step 1: User leaves the chat room
+      socket.leave(`chat_${chatId}`);
+      console.log(`👋 User ${userId} left chat ${chatId}`);
+
+      // Step 2: Notify others in chat that user went offline
+      socket.broadcast.to(`chat_${chatId}`).emit('user_left_chat', {
+        userId,
+        chatId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Message Sent Event
+   * ------------------
+   * When a user sends a message, broadcast it to all users in the chat.
+   * 
+   * Flow:
+   * 1. User types message and clicks Send
+   * 2. Client sends 'message_sent' event with message data
+   * 3. Server broadcasts to all users in chat_<chatId> room
+   * 4. All clients receive 'message_received' event with message
+   * 5. UI updates to show new message in real-time
+   * 
+   * Why broadcast and not direct?
+   * - Multi-device support: User might have multiple tabs/devices open
+   * - Read receipts: Need to track who read it
+   * - Group chats: Multiple recipients
+   */
+  socket.on('message_sent', ({ chatId, message }) => {
+    if (chatId && message) {
+      console.log(`💌 Message sent to chat ${chatId}`);
+      
+      // Broadcast to all users in this chat (including sender)
+      // Includes full message object with metadata
+      io.to(`chat_${chatId}`).emit('message_received', {
+        chatId,
+        message,
+      });
+    }
+  });
+
+  /**
+   * Message Edited Event
+   * --------------------
+   * When a user edits their message, broadcast the updated content
+   * to all users in the chat so they see the changes.
+   * 
+   * Example flow:
+   * 1. User clicks Edit on their message
+   * 2. Modal shows current content
+   * 3. User modifies text and clicks Save
+   * 4. Client sends 'message_edited' with new content
+   * 5. All users see "[edited]" indicator and updated text
+   */
+  socket.on('message_edited', ({ chatId, messageId, content }) => {
+    if (chatId && messageId && content) {
+      console.log(`✏️ Message ${messageId} edited in chat ${chatId}`);
+      
+      // Broadcast edited message to all users in chat
+      io.to(`chat_${chatId}`).emit('message_edited', {
+        chatId,
+        messageId,
+        content,
+        editedAt: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Message Deleted Event
+   * ---------------------
+   * When a user deletes their message, broadcast the deletion
+   * so all users see it marked as "[message deleted]".
+   * 
+   * Note: This is a SOFT delete - message still exists in DB
+   * but is marked as deleted for timeline integrity.
+   */
+  socket.on('message_deleted', ({ chatId, messageId }) => {
+    if (chatId && messageId) {
+      console.log(`🗑️ Message ${messageId} deleted in chat ${chatId}`);
+      
+      // Broadcast deletion to all users in chat
+      io.to(`chat_${chatId}`).emit('message_deleted', {
+        chatId,
+        messageId,
+        deletedAt: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Start Typing Event
+   * ------------------
+   * When a user starts typing, show a typing indicator to others.
+   * Throttled on client side (broadcast every 1-2 seconds, not every keystroke).
+   * 
+   * Visual feedback:
+   * - Shows "John is typing..." below the message list
+   * - Auto-disappears after 3 seconds of no typing
+   * 
+   * Why important?
+   * - Improves conversation feel (know other person is responding)
+   * - Prevents waiting confusion ("Is they coming back?")
+   * - Standard in all modern chat apps
+   */
+  socket.on('start_typing', ({ chatId, username }) => {
+    if (chatId && username) {
+      console.log(`⌨️ ${username} is typing in chat ${chatId}`);
+      
+      // Broadcast to all OTHER users in chat (not the typer)
+      socket.broadcast.to(`chat_${chatId}`).emit('user_typing', {
+        chatId,
+        username,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Stop Typing Event
+   * -----------------
+   * When user stops typing (pauses > 2 sec or sends message),
+   * broadcast this to remove typing indicator.
+   */
+  socket.on('stop_typing', ({ chatId, username }) => {
+    if (chatId && username) {
+      console.log(`⌨️ ${username} stopped typing in chat ${chatId}`);
+      
+      // Notify all other users
+      socket.broadcast.to(`chat_${chatId}`).emit('user_stopped_typing', {
+        chatId,
+        username,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Mark Message as Read Event
+   * --------------------------
+   * When user reads a message, broadcast read receipt to others.
+   * Read receipts show who has seen the message and when.
+   * 
+   * Example:
+   * - Message shows checkmarks: ✓ (sent), ✓✓ (delivered), ✓✓ (read)
+   * - Only for message sender's own messages
+   * - Helps confirm message was received
+   */
+  socket.on('message_read', ({ chatId, messageId, userId }) => {
+    if (chatId && messageId && userId) {
+      console.log(`👁️ User ${userId} read message ${messageId}`);
+      
+      // Broadcast read receipt to all users in chat
+      io.to(`chat_${chatId}`).emit('message_read', {
+        chatId,
+        messageId,
+        userId,
+        readAt: new Date().toISOString(),
+      });
+    }
+  });
+
+  // ========== FRIEND SYSTEM EVENTS ==========
+
+  /**
+   * Friend Request Sent Event
+   * -------------------------
+   * Notify recipient when they receive a friend request.
+   * 
+   * Flow:
+   * 1. User A clicks "Add Friend" on User B's profile
+   * 2. Friend request created in DB with status='pending'
+   * 3. Socket event sent to notify User B in real-time
+   * 4. User B sees badge update without page refresh
+   */
+  socket.on('friend_request_sent', ({ recipientId, requesterUsername }) => {
+    if (recipientId && requesterUsername) {
+      console.log(`🤝 Friend request sent to ${recipientId} from ${requesterUsername}`);
+      
+      // Send notification to specific user (using their userId room)
+      io.to(recipientId).emit('new_friend_request', {
+        requesterUsername,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Friend Request Accepted Event
+   * ----------------------------
+   * Notify requester when their friend request is accepted.
+   * Updates both users' friend lists in real-time.
+   */
+  socket.on('friend_request_accepted', ({ requesterId, recipientUsername }) => {
+    if (requesterId && recipientUsername) {
+      console.log(`✅ Friend request accepted for ${requesterId}`);
+      
+      // Notify requester that their request was accepted
+      io.to(requesterId).emit('friend_request_accepted', {
+        username: recipientUsername,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * Friend Removed Event
+   * --------------------
+   * When a user unfriends someone, notify the other user.
+   */
+  socket.on('friend_removed', ({ otherId, username }) => {
+    if (otherId && username) {
+      console.log(`👋 Friend removed by ${username}`);
+      
+      // Notify the other user they were unfriended
+      io.to(otherId).emit('friend_removed', {
+        username,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  // ========== CHAT CREATION EVENT ==========
+
+  /**
+   * Chat Created Event
+   * ------------------
+   * When a new DM or group chat is created, notify all participants.
+   * One participant is the creator, others should see it in their chat list.
+   */
+  socket.on('chat_created', ({ chat, participantIds }) => {
+    if (chat && participantIds) {
+      console.log(`💬 New chat created: ${chat._id}`);
+      
+      // Notify all participants about the new chat
+      // Each participant receives the chat in their list
+      participantIds.forEach((userId) => {
+        io.to(userId).emit('chat_created', {
+          chat,
+          timestamp: new Date().toISOString(),
+        });
+      });
+    }
+  });
+
+  // ========== USER PRESENCE EVENTS ==========
+
+  /**
+   * User Online Event
+   * -----------------
+   * When user opens the app, they broadcast their online status.
+   * Friends can see if they're available for chatting.
+   */
+  socket.on('user_online', ({ userId, username }) => {
+    if (userId && username) {
+      console.log(`🟢 ${username} is online`);
+      
+      // Broadcast to all connected users
+      io.emit('user_status_changed', {
+        userId,
+        username,
+        isOnline: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * User Offline Event
+   * ------------------
+   * When user leaves the app or disconnects, broadcast offline status.
+   */
+  socket.on('user_offline', ({ userId, username }) => {
+    if (userId && username) {
+      console.log(`🔴 ${username} is offline`);
+      
+      // Broadcast to all connected users
+      io.emit('user_status_changed', {
+        userId,
+        username,
+        isOnline: false,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
   /**
    * Disconnect Handler
    * ------------------
@@ -182,18 +510,35 @@ const PORT = process.env.SOCKET_PORT || 3001;
 
 httpServer.listen(PORT, () => {
   console.log(`
-╔═══════════════════════════════════════════════════════╗
-║                                                       ║
-║   🚀 Socket.io Server Running                         ║
-║   📡 Port: ${PORT}                                       ║
-║                                                       ║
-║   Events:                                             ║
-║   • authenticate  - User identification               ║
-║   • new_post      - Broadcast new posts               ║
-║   • post_liked    - Handle likes & notifications      ║
-║   • post_commented - Handle comments & notifications  ║
-║                                                       ║
-╚═══════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║   🚀 Socket.io Server Running                                 ║
+║   📡 Port: ${PORT}                                               ║
+║                                                               ║
+║   📝 POST EVENTS:                                             ║
+║   • new_post      - Broadcast new posts                       ║
+║   • post_liked    - Handle likes & notifications              ║
+║   • post_commented - Handle comments & notifications          ║
+║                                                               ║
+║   💬 CHAT EVENTS:                                             ║
+║   • join_chat, leave_chat       - Chat room management        ║
+║   • message_sent, message_edited, message_deleted             ║
+║   • start_typing, stop_typing   - Typing indicators           ║
+║   • message_read                - Read receipts               ║
+║                                                               ║
+║   🤝 FRIEND EVENTS:                                           ║
+║   • friend_request_sent, friend_request_accepted              ║
+║   • friend_removed              - Unfriend notifications      ║
+║                                                               ║
+║   👁️ PRESENCE EVENTS:                                          ║
+║   • user_online, user_offline   - User status tracking        ║
+║   • user_status_changed         - Broadcast status            ║
+║                                                               ║
+║   🔌 CONNECTION EVENTS:                                       ║
+║   • authenticate  - User identification at login              ║
+║   • disconnect    - Cleanup on disconnect                     ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
   `);
 });
 
