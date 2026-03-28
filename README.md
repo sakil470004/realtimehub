@@ -92,7 +92,14 @@ realtimehub/
    NEXT_PUBLIC_APP_URL=http://localhost:3000
    ```
 
-4. **Start the development servers**
+4. **Start MongoDB server**
+
+   If using a local MongoDB installation, make sure the MongoDB server is running:
+   ```bash
+   brew services start mongodb-community
+   ```
+
+5. **Start the development servers**
 
    You need to run two servers: Next.js and Socket.io
 
