@@ -151,6 +151,22 @@ export default function Navbar() {
               Create Post
             </Link>
 
+            {/* Friends Link */}
+            <Link
+              href="/friends"
+              className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium text-sm"
+            >
+              Friends
+            </Link>
+
+            {/* Chats Link */}
+            <Link
+              href="/chats"
+              className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium text-sm"
+            >
+              Chats
+            </Link>
+
             {/* Notification Bell */}
             <div ref={notificationRef} className="relative">
               <button
