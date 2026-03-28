@@ -381,8 +381,8 @@ export default function ChatModal({
     const unreadMessages = messages.filter(
       (msg) =>
         !msg.isDeleted &&
-        msg.sender._id !== user?._id &&
-        !msg.readBy.some((r) => r.user === user?._id)
+        msg.sender._id !== user?.id &&
+        !msg.readBy.some((r) => r.user === user?.id)
     );
 
     for (const message of unreadMessages) {
@@ -454,7 +454,7 @@ export default function ChatModal({
     // This allows the server to broadcast messages to only users in this chat
     socket.emit('join_chat', { 
       chatId, 
-      userId: user?._id 
+      userId: user?.id 
     });
     console.log(`📍 Joined chat room: chat_${chatId}`);
 
@@ -554,7 +554,7 @@ export default function ChatModal({
       // Emit leave_chat event
       socket.emit('leave_chat', {
         chatId,
-        userId: user?._id
+        userId: user?.id
       });
       console.log(`📍 Left chat room: chat_${chatId}`);
 
@@ -610,7 +610,7 @@ export default function ChatModal({
    * Get list of other users (not current user)
    * For showing online status and typing indicators
    */
-  const otherUsers = participants.filter((p) => p._id !== user?._id);
+  const otherUsers = participants.filter((p) => p._id !== user?.id);
 
   // ========== RENDER: IF NOT OPEN ==========
 
@@ -707,7 +707,7 @@ export default function ChatModal({
             <>
               {messages.map((message) => {
                 // Determine if message is from current user
-                const isOwnMessage = String(message.sender._id) === String(user?._id);
+                const isOwnMessage = String(message.sender._id) === String(user?.id);
 
                 return (
                   <div

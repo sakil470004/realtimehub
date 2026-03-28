@@ -356,7 +356,7 @@ export default function ChatsPage() {
     }
 
     // For DM, find the other participant
-    const otherUser = chat.participants.find((p) => p._id !== user?._id);
+    const otherUser = chat.participants.find((p) => p._id !== user?.id);
     return otherUser?.username || 'Chat';
   };
 

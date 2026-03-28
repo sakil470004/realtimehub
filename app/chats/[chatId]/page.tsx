@@ -67,8 +67,8 @@ export default function ChatPage() {
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-  console.log("user in chat page:", user);
-  console.log("messages in chat page:", messages);
+  // console.log("user in chat page:", user);
+  // console.log("messages in chat page:", messages);
   const [error, setError] = useState('');
   const [chat, setChat] = useState<Chat | null>(null);
   const [usersTyping, setUsersTyping] = useState<string[]>([]);
