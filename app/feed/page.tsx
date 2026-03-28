@@ -125,6 +125,26 @@ function FeedContent() {
   }, [filterUser]);
 
   /**
+   * Real-time Post Deletion
+   * -----------------------
+   * Listen for deleted posts via Socket.io.
+   */
+  useEffect(() => {
+    const socket = socketManager.getSocket();
+    if (!socket) return;
+
+    const handlePostDeleted = (data: { postId: string }) => {
+      // Remove deleted post from feed
+      setPosts(prev => prev.filter(p => p._id !== data.postId));
+    };
+
+    socket.on('post_deleted', handlePostDeleted);
+    return () => {
+      socket.off('post_deleted', handlePostDeleted);
+    };
+  }, []);
+
+  /**
    * Load More Posts
    * ---------------
    * Called when user scrolls to bottom or clicks "Load More".
@@ -243,7 +263,14 @@ function FeedContent() {
         /* Posts List */
         <div className="space-y-4">
           {posts.map((post) => (
-            <PostCard key={post._id} post={post} />
+            <PostCard 
+              key={post._id} 
+              post={post}
+              onPostDeleted={(postId) => {
+                // Remove deleted post from feed
+                setPosts(prev => prev.filter(p => p._id !== postId));
+              }}
+            />
           ))}
 
           {/* Load More Button / Loading */}
