@@ -437,13 +437,38 @@ export default function ChatModal({
       markMessagesAsRead();
     }, 500);
 
-    // Step 3: Set up Socket.io listeners
+    // Step 3: Initialize online users from participants
+    // When chat opens, mark all participants as potentially online
+    // They'll be confirmed online/offline via Socket.io events
+    const initialOnlineUsers = new Set<string>();
+    participants.forEach((p) => {
+      initialOnlineUsers.add(p._id);
+    });
+    setOnlineUsers(initialOnlineUsers);
+
+    // Step 4: Set up Socket.io listeners
     const socket = socketManager.getSocket();
     if (!socket) return;
 
+    // Step 4a: Join this specific chat room
+    // This allows the server to broadcast messages to only users in this chat
+    socket.emit('join_chat', { 
+      chatId, 
+      userId: user?._id 
+    });
+    console.log(`📍 Joined chat room: chat_${chatId}`);
+
     // Listen for new messages
     const handleNewMessage = (data: { message: Message }) => {
-      setMessages((prev) => [...prev, data.message]);
+      // Prevent duplicate messages (sender already added message from API response)
+      setMessages((prev) => {
+        // Check if message already exists
+        const messageExists = prev.some((msg) => msg._id === data.message._id);
+        if (messageExists) {
+          return prev; // Don't add duplicate
+        }
+        return [...prev, data.message];
+      });
     };
     socket.on('message_received', handleNewMessage);
 
@@ -524,8 +549,16 @@ export default function ChatModal({
     };
     socket.on('user_status_changed', handleUserStatusChanged);
 
-    // Cleanup listeners
+    // Cleanup listeners and leave chat room when modal closes
     return () => {
+      // Emit leave_chat event
+      socket.emit('leave_chat', {
+        chatId,
+        userId: user?._id
+      });
+      console.log(`📍 Left chat room: chat_${chatId}`);
+
+      // Remove all listeners
       socket.off('message_received', handleNewMessage);
       socket.off('message_edited', handleEditMessage);
       socket.off('message_deleted', handleDeletedMessage);
@@ -674,7 +707,7 @@ export default function ChatModal({
             <>
               {messages.map((message) => {
                 // Determine if message is from current user
-                const isOwnMessage = message.sender._id === user?._id;
+                const isOwnMessage = String(message.sender._id) === String(user?._id);
 
                 return (
                   <div
@@ -683,8 +716,17 @@ export default function ChatModal({
                       isOwnMessage ? 'justify-end' : 'justify-start'
                     }`}
                   >
-                    {/* Message Bubble */}
-                    <div
+                    {/* Message Bubble Container */}
+                    <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'} gap-1`}>
+                      {/* Sender name (for received messages or group chats) */}
+                      {!isOwnMessage && isGroup && (
+                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 px-1">
+                          {message.sender.username}
+                        </p>
+                      )}
+
+                      {/* Message Bubble */}
+                      <div
                       className={`max-w-xs px-4 py-2 rounded-lg group ${
                         isOwnMessage
                           ? 'bg-blue-500 text-white rounded-br-none'
@@ -767,6 +809,7 @@ export default function ChatModal({
                           </button>
                         </div>
                       )}
+                    </div>
                     </div>
                   </div>
                 );

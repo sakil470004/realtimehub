@@ -35,9 +35,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { socketManager } from '@/lib/socket';
-import ChatModal from '@/components/ChatModal';
 
 // ========== TYPE DEFINITIONS ==========
 
@@ -61,6 +61,7 @@ interface Chat {
 // ========== COMPONENT ==========
 
 export default function ChatsPage() {
+  const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
 
   // ========== STATE MANAGEMENT ==========
@@ -76,10 +77,6 @@ export default function ChatsPage() {
 
   // Error handling
   const [error, setError] = useState('');
-
-  // Chat modal state
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Create DM modal
   const [showCreateDM, setShowCreateDM] = useState(false);
@@ -175,9 +172,8 @@ export default function ChatsPage() {
         const socket = socketManager.getSocket();
         socket?.emit('chat_created', { chat: data.chat });
 
-        // Open the new chat
-        setSelectedChat(data.chat);
-        setIsModalOpen(true);
+        // Navigate to the new chat
+        router.push(`/chats/${data.chat._id}`);
 
         // Close modal
         setShowCreateDM(false);
@@ -231,9 +227,8 @@ export default function ChatsPage() {
         const socket = socketManager.getSocket();
         socket?.emit('chat_created', { chat: data.chat });
 
-        // Open the new chat
-        setSelectedChat(data.chat);
-        setIsModalOpen(true);
+        // Navigate to the new chat
+        router.push(`/chats/${data.chat._id}`);
 
         // Close modal
         setShowCreateGroup(false);
@@ -550,10 +545,7 @@ export default function ChatsPage() {
             <div
               key={chat._id}
               className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition cursor-pointer group"
-              onClick={() => {
-                setSelectedChat(chat);
-                setIsModalOpen(true);
-              }}
+              onClick={() => router.push(`/chats/${chat._id}`)}
             >
               {/* Chat Info */}
               <div className="flex-1 min-w-0">
@@ -616,18 +608,6 @@ export default function ChatsPage() {
             </div>
           ))}
         </div>
-      )}
-
-      {/* ========== CHAT MODAL ========== */}
-      {selectedChat && (
-        <ChatModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          chatId={selectedChat._id}
-          chatName={getChatName(selectedChat)}
-          isGroup={selectedChat.isGroup}
-          participants={selectedChat.participants}
-        />
       )}
 
       {/* ========== CREATE DM MODAL ========== */}

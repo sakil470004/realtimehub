@@ -26,9 +26,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { socketManager } from '@/lib/socket';
-import ChatModal from '@/components/ChatModal';
 
 // TypeScript interfaces for type safety
 interface FriendRequest {
@@ -53,6 +53,7 @@ interface Friend {
 }
 
 export default function FriendsPage() {
+  const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
 
   // ========== STATE MANAGEMENT ==========
@@ -77,10 +78,6 @@ export default function FriendsPage() {
   const [actionInProgress, setActionInProgress] = useState<{
     [key: string]: boolean;
   }>({});
-
-  // Chat modal state
-  const [selectedFriendChat, setSelectedFriendChat] = useState<Friend | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Online status tracking
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
@@ -148,12 +145,8 @@ export default function FriendsPage() {
       if (response.ok) {
         const data = await response.json();
         
-        // Set chat modal state with correct chatId
-        setSelectedFriendChat({
-          ...friend,
-          _id: data.chat._id, // Use actual chat ID
-        });
-        setIsModalOpen(true);
+        // Navigate to the chat page
+        router.push(`/chats/${data.chat._id}`);
       } else {
         alert('Failed to open chat');
       }
@@ -649,19 +642,6 @@ export default function FriendsPage() {
       </div>
 
       {/* ========== CHAT MODAL ========== */}
-      {selectedFriendChat && (
-        <ChatModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          chatId={selectedFriendChat._id}
-          chatName={selectedFriendChat.username}
-          isGroup={false}
-          participants={[
-            { _id: selectedFriendChat._id, username: selectedFriendChat.username },
-            { _id: user?._id || '', username: user?.username || '' },
-          ]}
-        />
-      )}
     </div>
   );
 }

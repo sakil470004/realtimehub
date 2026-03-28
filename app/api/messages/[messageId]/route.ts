@@ -125,7 +125,7 @@ export async function PUT(
     await message.save();
 
     // Step 8: Populate sender info for response
-    await message.populate('sender', 'username');
+    await message.populate('sender', '_id username');
 
     // Step 9: Return success
     // Socket event will notify other users of the edit
