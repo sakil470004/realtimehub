@@ -73,7 +73,7 @@ io.on('connection', (socket) => {
    */
   socket.on('authenticate', ({ userId }) => {
     if (userId) {
-      // Store the mapping
+      // Store the mapping of userId to socket.id
       userSockets.set(userId, socket.id);
       console.log(`✅ User ${userId} authenticated with socket ${socket.id}`);
       
@@ -90,7 +90,7 @@ io.on('connection', (socket) => {
    */
   socket.on('new_post', (data) => {
     console.log('📝 New post received:', data.post?._id);
-    
+    // console.log("all users:", userSockets);
     // Broadcast to all other clients (not the sender)
     socket.broadcast.emit('new_post', data);
   });

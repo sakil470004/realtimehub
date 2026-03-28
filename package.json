@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "socket": "node server.js",
-    "dev:all": "concurrently \"npm run dev\" \"npm run socket\""
+    "socket": "nodemon server.js",
+    "dev:all": "concurrently \"npm run dev\" \"nodemon run socket\""
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
