@@ -297,7 +297,7 @@ export default function ProfilePage() {
   }
 
   // ========== RENDER: NOT OWN PROFILE ==========
-  const isOwnProfile = currentUser?._id === userId;
+  const isOwnProfile = currentUser?.id === userId;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
