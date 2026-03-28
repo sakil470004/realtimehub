@@ -1162,4 +1162,4 @@ This project is licensed under the MIT License.
 **Version**: 2.0.0 (Chat System & Friend System Complete)  
 **Status**: ✅ Production Ready
 
-Built with ❤️ using Next.js 16, MongoDB, Socket.io, and TypeScript
+Built with ❤️ by Mynul Islam using Next.js 16, MongoDB, Socket.io, and TypeScript
