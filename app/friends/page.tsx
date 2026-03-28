@@ -82,7 +82,51 @@ export default function FriendsPage() {
   const [selectedFriendChat, setSelectedFriendChat] = useState<Friend | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ========== OPEN CHAT WITH FRIEND ==========
+  // Online status tracking
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+
+  // ========== LISTEN FOR USER PRESENCE UPDATES ==========
+
+  /**
+   * Listen for real-time online status changes
+   * When user logs in/out, all clients get notified
+   */
+  useEffect(() => {
+    const socket = socketManager.getSocket();
+    if (!socket) return;
+
+    // Listen for status changes (user came online or went offline)
+    const handleUserStatusChanged = (data: {
+      userId: string;
+      username: string;
+      isOnline: boolean;
+    }) => {
+      setOnlineUsers((prev) => {
+        const updated = new Set(prev);
+        
+        // Step 1: If user came online, add to Set
+        if (data.isOnline) {
+          updated.add(data.userId);
+        }
+        // Step 2: If user went offline, remove from Set
+        else {
+          updated.delete(data.userId);
+        }
+        
+        return updated;
+      });
+    };
+
+    // Register listener
+    socket.on('user_status_changed', handleUserStatusChanged);
+
+    // Cleanup listener when component unmounts
+    return () => {
+      socket.off('user_status_changed', handleUserStatusChanged);
+    };
+  }, []);
+
+  // ========== LOAD PENDING REQUESTS ==========
 
   /**
    * Create or open a DM chat with a friend
@@ -524,16 +568,45 @@ export default function FriendsPage() {
               >
                 {/* Friend Info */}
                 <div className="flex items-center gap-3 min-w-0">
-                  {/* Avatar */}
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white font-bold flex-shrink-0">
-                    {friend.username.charAt(0).toUpperCase()}
+                  {/* Avatar Container with Online Status Indicator */}
+                  <div className="relative flex-shrink-0">
+                    {/* Avatar */}
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white font-bold">
+                      {friend.username.charAt(0).toUpperCase()}
+                    </div>
+
+                    {/* Online Status Dot */}
+                    <div
+                      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${
+                        onlineUsers.has(friend._id)
+                          ? 'bg-green-500'
+                          : 'bg-gray-400'
+                      }`}
+                      title={
+                        onlineUsers.has(friend._id)
+                          ? 'Online'
+                          : 'Offline'
+                      }
+                    />
                   </div>
 
                   {/* User Details */}
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white truncate">
-                      {friend.username}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-900 dark:text-white truncate">
+                        {friend.username}
+                      </p>
+                      {/* Online Status Badge */}
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                          onlineUsers.has(friend._id)
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        }`}
+                      >
+                        {onlineUsers.has(friend._id) ? '🟢 Online' : '⚫ Offline'}
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                       @{friend.email.split('@')[0]}
                     </p>

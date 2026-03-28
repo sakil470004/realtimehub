@@ -148,6 +148,9 @@ export default function ChatModal({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // Online status of participants
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+
   // ========== LOAD INITIAL MESSAGES ==========
 
   /**
@@ -502,6 +505,25 @@ export default function ChatModal({
     };
     socket.on('user_stopped_typing', handleUserStoppedTyping);
 
+    // Listen for user online/offline status changes
+    const handleUserStatusChanged = (data: {
+      userId: string;
+      username: string;
+      isOnline: boolean;
+    }) => {
+      // Step 1: Update online users Set based on status change
+      setOnlineUsers((prev) => {
+        const updated = new Set(prev);
+        if (data.isOnline) {
+          updated.add(data.userId);
+        } else {
+          updated.delete(data.userId);
+        }
+        return updated;
+      });
+    };
+    socket.on('user_status_changed', handleUserStatusChanged);
+
     // Cleanup listeners
     return () => {
       socket.off('message_received', handleNewMessage);
@@ -509,6 +531,7 @@ export default function ChatModal({
       socket.off('message_deleted', handleDeletedMessage);
       socket.off('user_typing', handleUserTyping);
       socket.off('user_stopped_typing', handleUserStoppedTyping);
+      socket.off('user_status_changed', handleUserStatusChanged);
     };
   }, [isOpen, chatId]);
 
@@ -581,17 +604,27 @@ export default function ChatModal({
                 {chatName}
               </h2>
               {!isGroup && otherUsers.length > 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {otherUsers[0].isOnline ? (
-                    <span className="text-green-500">🟢 Online</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  {/* Online Status Indicator for DM */}
+                  {/* Check if the other user (DM recipient) is in our onlineUsers Set */}
+                  {onlineUsers.has(otherUsers[0]._id) ? (
+                    <>
+                      <span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span>
+                      <span className="text-green-500 font-medium">Online</span>
+                    </>
                   ) : (
-                    <span>Offline</span>
+                    <>
+                      <span className="w-2 h-2 bg-gray-400 rounded-full inline-block"></span>
+                      <span className="text-gray-500">Offline</span>
+                    </>
                   )}
                 </p>
               )}
               {isGroup && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {participants.length} members
+                  {/* Group Chat: Show member count and how many are online */}
+                  {/* Count how many participants are currently online */}
+                  {participants.length} members • {participants.filter((p) => onlineUsers.has(p._id)).length} online
                 </p>
               )}
             </div>
