@@ -67,6 +67,8 @@ export default function ChatPage() {
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  console.log("user in chat page:", user);
+  console.log("messages in chat page:", messages);
   const [error, setError] = useState('');
   const [chat, setChat] = useState<Chat | null>(null);
   const [usersTyping, setUsersTyping] = useState<string[]>([]);
@@ -83,6 +85,7 @@ export default function ChatPage() {
         if (foundChat) {
           setChat(foundChat);
           // Initialize online users
+          console.log('Chat participants:', foundChat);
           const onlineSet = new Set<string>();
           foundChat.participants.forEach((p) => onlineSet.add(p._id));
           setOnlineUsers(onlineSet);
@@ -115,8 +118,8 @@ export default function ChatPage() {
         data.messages.forEach(async (msg: Message) => {
           if (
             !msg.isDeleted &&
-            msg.sender._id !== user?._id &&
-            !msg.readBy.some((r) => r.user === user?._id)
+            msg.sender._id !== user?.id &&
+            !msg.readBy.some((r) => r.user === user?.id)
           ) {
             try {
               await fetch(`/api/messages/${msg._id}/read`, {
@@ -198,7 +201,7 @@ export default function ChatPage() {
     if (!socket || !chatId) return;
 
     // Join chat room
-    socket.emit('join_chat', { chatId, userId: user?._id });
+    socket.emit('join_chat', { chatId, userId: user?.id });
     console.log(`📍 Joined chat: ${chatId}`);
 
     // Listen for new messages
@@ -264,14 +267,14 @@ export default function ChatPage() {
 
     // Cleanup
     return () => {
-      socket.emit('leave_chat', { chatId, userId: user?._id });
+      socket.emit('leave_chat', { chatId, userId: user?.id });
       socket.off('message_received', handleNewMessage);
       socket.off('message_edited', handleEditMessage);
       socket.off('message_deleted', handleDeleteMessage);
       socket.off('user_typing', handleUserTyping);
       socket.off('user_status_changed', handleUserStatusChanged);
     };
-  }, [chatId, user?._id]);
+  }, [chatId, user?.id]);
 
   // ========== FORMAT TIME ==========
 
@@ -294,7 +297,7 @@ export default function ChatPage() {
 
   // ========== GET OTHER USERS ==========
 
-  const otherUsers = chat?.participants.filter((p) => p._id !== user?._id) || [];
+  const otherUsers = chat?.participants.filter((p) => p._id !== user?.id) || [];
 
   // ========== RENDER: LOADING ==========
 
@@ -382,7 +385,7 @@ export default function ChatPage() {
           </div>
         ) : (
           messages.map((message) => {
-            const isOwnMessage = String(message.sender._id) === String(user?._id);
+            const isOwnMessage = String(message.sender._id) === String(user?.id);
 
             return (
               <div
