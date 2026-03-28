@@ -121,25 +121,6 @@ ChatSchema.index({ participants: 1, isGroup: 1 });
 // Find group chats created by a user
 ChatSchema.index({ createdBy: 1, isGroup: 1 });
 
-/**
- * Pre-save Validation Hook
- * -------------------------
- * Ensures data integrity before saving
- */
-ChatSchema.pre('save', function (next) {
-  // Ensure direct messages have exactly 2 participants
-  if (!this.isGroup && this.participants.length !== 2) {
-    next(new Error('Direct messages must have exactly 2 participants'));
-  }
-  
-  // Ensure group chats have a name
-  if (this.isGroup && !this.name) {
-    next(new Error('Group chats must have a name'));
-  }
-  
-  next();
-});
-
 // Prevent model recompilation in Next.js development
 const Chat: Model<IChat> =
   mongoose.models.Chat || mongoose.model<IChat>('Chat', ChatSchema);

@@ -63,7 +63,15 @@ export async function POST(request: NextRequest) {
 
     // Step 2: Parse and validate request
     const body = await request.json();
-    const { participantIds, name } = body;
+    let { participantIds, name, recipientId, isGroup } = body;
+
+    // Handle both old and new request formats
+    // New format (from friends page DM creation): { recipientId, isGroup }
+    // Old format (from group creation): { participantIds, name }
+    if (recipientId && !participantIds) {
+      participantIds = [recipientId];
+      isGroup = isGroup === true; // Ensure boolean
+    }
 
     // Basic validation
     if (!Array.isArray(participantIds) || participantIds.length === 0) {
@@ -77,10 +85,14 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     // Step 4: Determine if this is a DM or group chat
-    const isGroup = participantIds.length > 1 || name !== null;
+    // If isGroup is explicitly provided in request, use that
+    // Otherwise determine based on participant count and name
+    const chatIsGroup = isGroup !== undefined 
+      ? isGroup 
+      : (participantIds.length > 1 || name !== null);
 
     // Step 5: Validate based on chat type
-    if (!isGroup) {
+    if (!chatIsGroup) {
       // Direct Message validation
       if (participantIds.length !== 1) {
         return NextResponse.json(

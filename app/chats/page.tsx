@@ -53,7 +53,7 @@ interface Chat {
     username: string;
     isOnline?: boolean;
   }>;
-  lastMessage?: string;
+  lastMessage?: string | { content: string; isDeleted: boolean }; // Can be string or Message object
   lastMessageAt?: string;
   unreadCount?: number;
 }
@@ -370,16 +370,37 @@ export default function ChatsPage() {
   /**
    * Get preview of last message
    * Truncate if too long
+   * 
+   * Note: lastMessage can be either:
+   * - A string (from Socket.io events)
+   * - A Message object from API (with content, isDeleted, etc.)
    */
   const getMessagePreview = (chat: Chat) => {
     if (!chat.lastMessage) return 'No messages yet';
 
-    const preview =
-      chat.lastMessage.length > 40
-        ? chat.lastMessage.substring(0, 40) + '...'
-        : chat.lastMessage;
+    // Handle if lastMessage is a Message object (from API populate)
+    if (typeof chat.lastMessage === 'object' && 'content' in chat.lastMessage) {
+      const messageObj = chat.lastMessage as any;
+      
+      // Show deleted message indicator
+      if (messageObj.isDeleted) return '[message deleted]';
+      
+      const content = messageObj.content || '';
+      const preview =
+        content.length > 40
+          ? content.substring(0, 40) + '...'
+          : content;
+      return preview;
+    }
 
-    return preview;
+    // Handle if lastMessage is a string (from Socket events)
+    const messageStr = typeof chat.lastMessage === 'string' ? chat.lastMessage : '';
+    const preview =
+      messageStr.length > 40
+        ? messageStr.substring(0, 40) + '...'
+        : messageStr;
+
+    return preview || 'No messages yet';
   };
 
   // ========== FORMAT TIME ==========

@@ -29,9 +29,12 @@ import { getCurrentUser } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    // Step 0: Await params (Next.js 15+ requirement)
+    const { userId } = await params;
+
     // Step 1: Authentication check
     const user = await getCurrentUser();
 
@@ -53,10 +56,10 @@ export async function GET(
       $or: [
         {
           requester: user.userId,
-          recipient: params.userId,
+          recipient: userId,
         },
         {
-          requester: params.userId,
+          requester: userId,
           recipient: user.userId,
         },
       ],

@@ -34,14 +34,17 @@ import { getCurrentUser } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    // Step 0: Await params (Next.js 15+ requirement)
+    const { userId } = await params;
+
     // Step 1: Connect to database
     await connectDB();
 
     // Step 2: Find the user profile
-    const user = await User.findById(params.userId).select(
+    const user = await User.findById(userId).select(
       '_id username email createdAt'
     );
 
@@ -56,19 +59,19 @@ export async function GET(
     // A user's friends are all ACCEPTED friendships where they are either requester or recipient
     const friendships = await Friendship.countDocuments({
       $or: [
-        { requester: params.userId, status: 'accepted' },
-        { recipient: params.userId, status: 'accepted' },
+        { requester: userId, status: 'accepted' },
+        { recipient: userId, status: 'accepted' },
       ],
     });
 
     // Step 4: Count user's posts
-    const postsCount = await Post.countDocuments({ author: params.userId });
+    const postsCount = await Post.countDocuments({ author: userId });
 
     // Step 5: Count mutual friends (optional - for current logged in user)
     let mutualFriendsCount = 0;
     const currentUser = await getCurrentUser();
 
-    if (currentUser && currentUser.userId !== params.userId) {
+    if (currentUser && currentUser.userId !== userId) {
       // Get current user's friends
       const currentUserFriendships = await Friendship.find({
         $or: [
@@ -86,8 +89,8 @@ export async function GET(
       // Get profile user's friends
       const profileUserFriendships = await Friendship.find({
         $or: [
-          { requester: params.userId, status: 'accepted' },
-          { recipient: params.userId, status: 'accepted' },
+          { requester: userId, status: 'accepted' },
+          { recipient: userId, status: 'accepted' },
         ],
       });
 
