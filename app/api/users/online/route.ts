@@ -68,8 +68,7 @@ export async function GET(request: NextRequest) {
      */
 
     // Simulated response - in production, query actual server
-    const onlineUsers = [
-      // { userId, username, connectedAt }
+    const onlineUsers: Array<{ userId: string; username: string; connectedAt: Date }> = [
       // This would be populated from server.js userPresence Map
     ];
 

@@ -95,7 +95,7 @@ export async function GET(
       });
 
       const profileUserFriendsIds = profileUserFriendships.map((f) =>
-        f.requester.toString() === params.userId
+        f.requester.toString() === userId
           ? f.recipient.toString()
           : f.requester.toString()
       );

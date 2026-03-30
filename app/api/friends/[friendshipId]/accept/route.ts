@@ -94,7 +94,8 @@ export async function POST(
 
     // Step 7: Return success
     // Populate both users for rich response data
-    await friendship.populate(['requester', 'recipient'], 'username');
+    await friendship.populate('requester', 'username');
+    await friendship.populate('recipient', 'username');
 
     return NextResponse.json({
       message: 'Friend request accepted',

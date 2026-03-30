@@ -95,7 +95,7 @@ const ChatSchema: Schema = new Schema(
     // Used for sorting chats: "most recent conversations first"
     lastMessageAt: {
       type: Date,
-      default: new Date(),
+      default: Date.now,
     },
   },
   {

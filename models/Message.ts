@@ -56,7 +56,6 @@ const MessageSchema: Schema = new Schema(
     // Which conversation this message belongs to
     chat: {
       type: Schema.Types.ObjectId,
-      ref: 'Chat',
       required: [true, 'Chat reference is required'],
       // If chat is deleted, consider deleting messages too
       index: true,
@@ -150,7 +149,7 @@ MessageSchema.index({ chat: 1, 'readBy.user': 1 });
  * Derive read status from the readBy array
  * Example: "3 people have read this"
  */
-MessageSchema.virtual('readCount').get(function () {
+MessageSchema.virtual('readCount').get(function (this: any) {
   return this.readBy ? this.readBy.length : 0;
 });
 

@@ -83,7 +83,7 @@ export async function PUT(
 
     if (!contentValidation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: contentValidation.error.errors },
+        { error: 'Validation failed', details: contentValidation.error.issues },
         { status: 400 }
       );
     }
@@ -131,7 +131,7 @@ export async function PUT(
     // Socket event will notify other users of the edit
     return NextResponse.json({
       message: 'Message updated',
-      message: message,
+      data: message,
     });
 
   } catch (error) {

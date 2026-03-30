@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/db';
 import Message from '@/models/Message';
 import { getCurrentUser } from '@/lib/auth';
@@ -92,7 +93,7 @@ export async function POST(
         message.readBy = [];
       }
       message.readBy.push({
-        user: user.userId,
+        user: new mongoose.Types.ObjectId(user.userId),
         readAt: new Date(),
       });
       await message.save();

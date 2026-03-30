@@ -270,11 +270,16 @@ export async function GET(request: NextRequest) {
 
     // Step 3: Get all chats where user is a participant
     // Sorted by most recent message first
+    // console.log(user)
     const chats = await Chat.find({
       participants: user.userId, // User is in the participants array
     })
       .populate('participants', 'username') // Get participant usernames
-      .populate('lastMessage') // Get the last message object
+      .populate({
+        path: 'lastMessage',
+        model: 'Message',
+        select: '_id sender content isEdited isDeleted createdAt',
+      }) // Get the last message object
       .sort({ lastMessageAt: -1 }) // Newest conversations first
       .limit(50);
 

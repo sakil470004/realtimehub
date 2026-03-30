@@ -405,14 +405,16 @@ export default function ChatModal({
    * Called when user types in message input
    * Throttled to avoid too many Socket.io events
    */
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>();
   const handleTyping = () => {
     // Broadcast that user is typing
     const socket = socketManager.getSocket();
     socket?.emit('start_typing', { chatId, username: user?.username });
 
     // Clear previous timeout
-    clearTimeout(typingTimeoutRef.current);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
 
     // After 2 seconds of no typing, broadcast stop typing
     typingTimeoutRef.current = setTimeout(() => {

@@ -97,7 +97,7 @@ export async function POST(
 
     if (!contentValidation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: contentValidation.error.errors },
+        { error: 'Validation failed', details: contentValidation.error.issues },
         { status: 400 }
       );
     }
@@ -153,7 +153,7 @@ export async function POST(
     // Note: Socket event will be emitted from frontend or via server handler
     return NextResponse.json(
       {
-        message: 'Message sent',
+        success: true,
         message: message,
       },
       { status: 201 }

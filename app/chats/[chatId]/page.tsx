@@ -87,7 +87,7 @@ export default function ChatPage() {
           // Initialize online users
           console.log('Chat participants:', foundChat);
           const onlineSet = new Set<string>();
-          foundChat.participants.forEach((p) => onlineSet.add(p._id));
+          foundChat.participants.forEach((p: any) => onlineSet.add(p._id));
           setOnlineUsers(onlineSet);
         }
       }

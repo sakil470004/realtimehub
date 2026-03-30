@@ -83,17 +83,18 @@ export async function GET(request: NextRequest) {
     const friends = friendships.map((friendship) => {
       // If current user is the requester, then the friend is the recipient
       // If current user is the recipient, then the friend is the requester
-      const friendUser =
-        friendship.requester._id.toString() === user.userId
-          ? friendship.recipient
-          : friendship.requester;
+      const friendUser = (
+        (friendship.requester as any)._id?.toString() === user.userId
+          ? (friendship.recipient as any)
+          : (friendship.requester as any)
+      );
 
       // Explicitly construct the friend object to ensure all fields are included
       // This fixes search by username issue (username field must be present)
       return {
-        _id: friendUser._id.toString(), // Convert ObjectId to string
-        username: friendUser.username, // Username for search/display
-        email: friendUser.email, // Email for display
+        _id: friendUser._id?.toString() || '', // Convert ObjectId to string
+        username: friendUser.username || '', // Username for search/display
+        email: friendUser.email || '', // Email for display
         friendship: {
           _id: friendship._id.toString(), // Friendship ID for unfriend action
           acceptedAt: friendship.updatedAt, // When the friendship was accepted
