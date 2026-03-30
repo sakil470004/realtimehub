@@ -9,7 +9,7 @@
  */
 
 import { getCurrentUser } from '@/lib/auth';
-import { connectDB } from '@/lib/db';
+import connectDB from '@/lib/db';
 import Call from '@/models/Call';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     // 3. Find all incoming calls (calls where current user is the receiver and status is 'ringing')
     // These are calls that are waiting for user to answer
     const calls = await Call.find({
-      receiver: user._id,
+      receiver: user.userId,
       status: 'ringing',
     })
       .populate('caller', '_id username')

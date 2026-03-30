@@ -81,14 +81,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         
         // Connect to Socket.io when user is authenticated
-        socketManager.connect(data.user.id);
+        const socket = socketManager.connect(data.user.id);
         
-        // Broadcast that user came online
-        const socket = socketManager.getSocket();
-        socket?.emit('user_online', {
-          userId: data.user.id,
-          username: data.user.username,
-        });
+        // Wait for socket to be ready before emitting user_online
+        // This ensures authenticate event is processed first
+        if (socket.connected) {
+          socket.emit('user_online', {
+            userId: data.user.id,
+            username: data.user.username,
+          });
+        } else {
+          socket.once('connect', () => {
+            socket.emit('user_online', {
+              userId: data.user.id,
+              username: data.user.username,
+            });
+          });
+        }
       } else {
         setUser(null);
         socketManager.disconnect();
@@ -129,14 +138,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         setUser(data.user);
         // Connect to socket after login
-        socketManager.connect(data.user.id);
+        const socket = socketManager.connect(data.user.id);
         
-        // Broadcast that user came online
-        const socket = socketManager.getSocket();
-        socket?.emit('user_online', {
-          userId: data.user.id,
-          username: data.user.username,
-        });
+        // Wait for socket to be connected before emitting user_online
+        if (socket.connected) {
+          socket.emit('user_online', {
+            userId: data.user.id,
+            username: data.user.username,
+          });
+        } else {
+          socket.once('connect', () => {
+            socket.emit('user_online', {
+              userId: data.user.id,
+              username: data.user.username,
+            });
+          });
+        }
         
         return { success: true };
       } else {
@@ -166,14 +183,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         setUser(data.user);
         // Connect to socket after signup
-        socketManager.connect(data.user.id);
+        const socket = socketManager.connect(data.user.id);
         
-        // Broadcast that user came online
-        const socket = socketManager.getSocket();
-        socket?.emit('user_online', {
-          userId: data.user.id,
-          username: data.user.username,
-        });
+        // Wait for socket to be connected before emitting user_online
+        if (socket.connected) {
+          socket.emit('user_online', {
+            userId: data.user.id,
+            username: data.user.username,
+          });
+        } else {
+          socket.once('connect', () => {
+            socket.emit('user_online', {
+              userId: data.user.id,
+              username: data.user.username,
+            });
+          });
+        }
         
         return { success: true };
       } else {

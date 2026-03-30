@@ -13,8 +13,18 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/db';
+
+// Import all models to ensure they're registered
 import Notification from '@/models/Notification';
+import Post from '@/models/Post';
+import User from '@/models/User';
+import Chat from '@/models/Chat';
+import Message from '@/models/Message';
+import Friendship from '@/models/Friendship';
+import Call from '@/models/Call';
+
 import { getCurrentUser } from '@/lib/auth';
 
 /**

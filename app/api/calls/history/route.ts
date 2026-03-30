@@ -11,7 +11,7 @@
  */
 
 import { getCurrentUser } from '@/lib/auth';
-import { connectDB } from '@/lib/db';
+import connectDB from '@/lib/db';
 import Call from '@/models/Call';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     // 4. Find all completed calls where current user was involved
     // A user is involved if they're either the caller or receiver
     const calls = await Call.find({
-      $or: [{ caller: user._id }, { receiver: user._id }],
+      $or: [{ caller: user.userId }, { receiver: user.userId }],
       status: { $in: ['ended', 'declined', 'missed'] }, // Only completed calls
     })
       .populate('caller', '_id username')
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
 
     // 5. Get total count for pagination UI
     const total = await Call.countDocuments({
-      $or: [{ caller: user._id }, { receiver: user._id }],
+      $or: [{ caller: user.userId }, { receiver: user.userId }],
       status: { $in: ['ended', 'declined', 'missed'] },
     });
 

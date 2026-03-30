@@ -60,6 +60,58 @@ export default function CallsPage() {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Fetch friends list and setup online status tracking
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchFriends = async () => {
+      try {
+        // 1. Fetch list of accepted friends
+        console.log('📞 Fetching friends list...');
+        const response = await fetch('/api/friends/list');
+        if (response.ok) {
+          const { friends } = await response.json();
+          console.log('✅ Friends fetched:', friends.length, friends);
+          
+          // Initialize all friends with offline status
+          const usersWithStatus: OnlineUser[] = friends.map((friend: any) => ({
+            _id: friend._id,
+            username: friend.username,
+            isOnline: false,
+          }));
+          
+          setOnlineUsers(usersWithStatus);
+        } else {
+          console.error('Failed to fetch friends:', response.status);
+        }
+      } catch (err) {
+        console.error('Error fetching friends:', err);
+      }
+    };
+
+    fetchFriends();
+  }, [user]);
+
+  // Listen for user online status changes via Socket.io
+  useEffect(() => {
+    // When user status changes (online or offline)
+    // Server broadcasts 'user_status_changed' when user_online/user_offline events are received
+    const unsubscribeStatusChange = onSocketEvent('user_status_changed', (data: any) => {
+      console.log('👁️ User status changed:', data.userId, data.isOnline);
+      setOnlineUsers((prev) =>
+        prev.map((user) =>
+          user._id === data.userId 
+            ? { ...user, isOnline: data.isOnline } 
+            : user
+        )
+      );
+    });
+
+    return () => {
+      unsubscribeStatusChange();
+    };
+  }, []);
+
   // WebRTC hook
   const webRTC = activeCallId && activeCall
     ? useWebRTCCall({

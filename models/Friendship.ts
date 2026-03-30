@@ -85,11 +85,6 @@ FriendshipSchema.index({ recipient: 1, status: 1 });
 // Query: "Show me pending friend requests I sent"
 FriendshipSchema.index({ requester: 1, status: 1 });
 
-// Compound index: Find friendship between two specific users
-// Query: "Are these two users friends?"
-// This makes it fast to check before allowing chat
-FriendshipSchema.index({ requester: 1, recipient: 1 });
-
 // Index for finding all friends (regardless of who requested)
 // Note: We'll query both directions in code
 FriendshipSchema.index({ status: 1 });
