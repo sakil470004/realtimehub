@@ -79,6 +79,53 @@ export interface NotificationEvent {
 }
 
 /**
+ * WebRTC Call Events
+ * ==================
+ * Used for voice/video calls with peer-to-peer connections
+ */
+
+export interface IncomingCallEvent {
+  callId: string;
+  caller: {
+    _id: string;
+    username: string;
+  };
+  callType: 'audio' | 'video';
+}
+
+export interface CallAnsweredEvent {
+  callId: string;
+}
+
+export interface CallDeclinedEvent {
+  callId: string;
+}
+
+export interface CallEndedEvent {
+  callId: string;
+  duration: number;
+}
+
+// WebRTC Signaling: Exchange connection info (SDP = Session Description Protocol)
+// SDP offer: "Here's how to connect to me" from caller
+// SDP answer: "Here's how to connect to me" from receiver
+// ICE candidates: Network routing info for actual connection
+export interface SDPOfferEvent {
+  callId: string;
+  offer: RTCSessionDescriptionInit;
+}
+
+export interface SDPAnswerEvent {
+  callId: string;
+  answer: RTCSessionDescriptionInit;
+}
+
+export interface ICECandidateEvent {
+  callId: string;
+  candidate: RTCIceCandidate;
+}
+
+/**
  * Socket Manager Class
  * --------------------
  * Handles socket connection lifecycle and provides methods
@@ -221,4 +268,40 @@ export function onSocketEvent<T>(
   
   // Return no-op cleanup if no socket
   return () => {};
+}
+
+/**
+ * Server-side getIO() function
+ * ----------------------------
+ * Used in Next.js API routes to emit Socket.io events.
+ * Connects to the Socket.io server and returns the client for emitting.
+ * 
+ * Note: This is ONLY for server-side use (API routes).
+ * Client-side code should use socketManager.
+ */
+let serverSocket: Socket | null = null;
+
+export function getIO(): Socket {
+  // If socket already exists and connected, return it
+  if (serverSocket?.connected) {
+    return serverSocket;
+  }
+
+  // Create a new server-side socket client
+  // This connects to our Socket.io server running on port 3001
+  serverSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
+    transports: ['websocket'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+  });
+
+  serverSocket.on('connect', () => {
+    console.log('📡 Server-side Socket connected:', serverSocket?.id);
+  });
+
+  serverSocket.on('disconnect', (reason) => {
+    console.log('📡 Server-side Socket disconnected:', reason);
+  });
+
+  return serverSocket;
 }

@@ -503,6 +503,76 @@ io.on('connection', (socket) => {
       }
     }
   });
+
+  // ========== WEBRTC CALL EVENTS ==========
+
+  /**
+   * SDP Offer Event
+   * ---------------
+   * WebRTC signaling: Caller sends their connection offer (SDP) to receiver.
+   * SDP = Session Description Protocol (describes media capabilities).
+   * 
+   * Example flow:
+   * 1. Caller initiates call via API
+   * 2. Both connect to WebRTC
+   * 3. Caller creates offer (peer connection description)
+   * 4. This event sends offer to receiver
+   * 5. Receiver creates answer
+   * 6. They exchange ICE candidates
+   * 7. Direct P2P connection establishes
+   */
+  socket.on('sdp_offer', ({ callId, offer, receiverId }) => {
+    if (callId && offer && receiverId) {
+      console.log(`📡 SDP Offer sent for call ${callId}`);
+      
+      // Forward the offer to the receiver
+      io.to(receiverId).emit('sdp_offer', {
+        callId,
+        offer,
+      });
+    }
+  });
+
+  /**
+   * SDP Answer Event
+   * ----------------
+   * WebRTC signaling: Receiver responds with their connection answer (SDP).
+   * This completes the handshake for establishing the P2P connection.
+   */
+  socket.on('sdp_answer', ({ callId, answer, callerId }) => {
+    if (callId && answer && callerId) {
+      console.log(`📡 SDP Answer sent for call ${callId}`);
+      
+      // Forward the answer back to the caller
+      io.to(callerId).emit('sdp_answer', {
+        callId,
+        answer,
+      });
+    }
+  });
+
+  /**
+   * ICE Candidate Event
+   * -------------------
+   * WebRTC signaling: Exchange ICE (Interactive Connectivity Establishment) candidates.
+   * ICE candidates are potential network routes for the peer connection.
+   * 
+   * Why needed:
+   * - Users might be behind firewalls/NAT
+   * - ICE tries multiple connection paths
+   * - This is how P2P connection actually routes through the internet
+   */
+  socket.on('ice_candidate', ({ callId, candidate, targetUserId }) => {
+    if (callId && candidate && targetUserId) {
+      console.log(`📡 ICE Candidate sent for call ${callId}`);
+      
+      // Forward ICE candidate to the other party
+      io.to(targetUserId).emit('ice_candidate', {
+        callId,
+        candidate,
+      });
+    }
+  });
 });
 
 // Start the server
@@ -530,7 +600,11 @@ httpServer.listen(PORT, () => {
 ║   • friend_request_sent, friend_request_accepted              ║
 ║   • friend_removed              - Unfriend notifications      ║
 ║                                                               ║
-║   👁️ PRESENCE EVENTS:                                          ║
+║   � CALL EVENTS (WebRTC):                                    ║
+║   • sdp_offer, sdp_answer       - Connection handshake        ║
+║   • ice_candidate               - Network routing info        ║
+║                                                               ║
+║   �👁️ PRESENCE EVENTS:                                          ║
 ║   • user_online, user_offline   - User status tracking        ║
 ║   • user_status_changed         - Broadcast status            ║
 ║                                                               ║
